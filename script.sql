@@ -1,20 +1,4 @@
-﻿using Microsoft.Data.Sqlite;
-
-namespace SistemaMarmoreGranito;
-
-public static class Database
-{
-    private const string ConnectionString = "Data Source=sistema.db";
-
-    public static void Initialize()
-    {
-        using var connection = new SqliteConnection(ConnectionString);
-        connection.Open();
-
-        var command = connection.CreateCommand();
-
-        command.CommandText = @"
-            CREATE TABLE IF NOT EXISTS Usuarios (
+ CREATE TABLE IF NOT EXISTS Usuarios (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 Nome TEXT NOT NULL,
                 Login TEXT NOT NULL,
@@ -40,13 +24,3 @@ public static class Database
                 Valor REAL NOT NULL,
                 FOREIGN KEY (BlocoCodigo) REFERENCES Blocos(CodigoBloco) -- Referência atualizada
             );
-        ";
-
-        command.ExecuteNonQuery();
-    }
-
-    public static SqliteConnection GetConnection()
-    {
-        return new SqliteConnection(ConnectionString);
-    }
-}

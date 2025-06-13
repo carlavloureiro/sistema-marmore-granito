@@ -1,4 +1,6 @@
 ﻿using SistemaMarmoreGranito;
+using SistemaMarmoreGranito.Models; 
+using Microsoft.Data.Sqlite;
 
 namespace SistemaMarmoreGranito
 {
@@ -129,7 +131,6 @@ namespace SistemaMarmoreGranito
             using var conexao = Database.GetConnection();
             conexao.Open();
 
-
             var comandoVerificacao = conexao.CreateCommand();
             comandoVerificacao.CommandText = "SELECT COUNT(*) FROM Usuarios WHERE Login = $login";
             comandoVerificacao.Parameters.AddWithValue("$login", loginUsuario);
@@ -156,7 +157,6 @@ namespace SistemaMarmoreGranito
             if (resultado > 0)
             {
                 Console.WriteLine("Usuário cadastrado com sucesso!");
-                MenuPrincipal();
 
             }
             else
@@ -169,20 +169,28 @@ namespace SistemaMarmoreGranito
         {
             Console.WriteLine("=== Cadastro de Bloco ===");
 
-            Console.Write("Código bloco: ");
-            string codigoBloco = Console.ReadLine();
+            Console.Write("Código do bloco: ");
+            string codigoBloco = Console.ReadLine(); 
 
             Console.Write("Pedreira de origem: ");
             string pedreiraOrigem = Console.ReadLine();
 
-            Console.Write("Metragem do bloco (em m³): ");
-            string metragem = Console.ReadLine();
+           Console.Write("Metragem do bloco (em m³): ");
+            if (!double.TryParse(Console.ReadLine(), out double metragem))
+            {
+                Console.WriteLine("Metragem inválida. Por favor, insira um número.");
+                return;
+            }
 
             Console.Write("Tipo do material: ");
             string tipoMaterial = Console.ReadLine();
 
             Console.Write("Valor de compra: ");
-            string valorCompra = Console.ReadLine();
+            if (!decimal.TryParse(Console.ReadLine(), out decimal valorCompra)) 
+            {
+                Console.WriteLine("Valor de compra inválido. Por favor, insira um número.");
+                return;
+            }
 
             Console.Write("Número da nota fiscal: ");
             string notaFiscal = Console.ReadLine();
@@ -190,13 +198,26 @@ namespace SistemaMarmoreGranito
             using var conexao = Database.GetConnection();
             conexao.Open();
 
+            // Verificar se o CodigoBloco já existe
+            var comandoVerificacao = conexao.CreateCommand();
+            comandoVerificacao.CommandText = "SELECT COUNT(*) FROM Blocos WHERE CodigoBloco = $codigoBloco";
+            comandoVerificacao.Parameters.AddWithValue("$codigoBloco", codigoBloco);
+
+            long existe = (long)comandoVerificacao.ExecuteScalar();
+
+            if (existe > 0)
+            {
+                Console.WriteLine("Erro: Já existe um bloco com este código.");
+                return;
+            }
+
             var comando = conexao.CreateCommand();
             comando.CommandText = @"
-                INSERT INTO Blocos (Codigo, PedreiraOrigem, Metragem, TipoMaterial, ValorCompra, NotaFiscalEntrada)
-                VALUES ($codigo, $origem, $metragem, $tipo, $valor, $nota);
+                INSERT INTO Blocos (CodigoBloco, PedreiraOrigem, Metragem, TipoMaterial, ValorCompra, NotaFiscalEntrada)
+                VALUES ($codigoBloco, $origem, $metragem, $tipo, $valor, $nota);
             ";
 
-            comando.Parameters.AddWithValue("$codigo", codigoBloco);
+            comando.Parameters.AddWithValue("$codigoBloco", codigoBloco); 
             comando.Parameters.AddWithValue("$origem", pedreiraOrigem);
             comando.Parameters.AddWithValue("$metragem", metragem);
             comando.Parameters.AddWithValue("$tipo", tipoMaterial);
@@ -219,6 +240,9 @@ namespace SistemaMarmoreGranito
         {
             Console.WriteLine("=== Cadastro de Chapa ===");
 
+            Console.Write("Código da chapa: ");
+            string codigoChapa = Console.ReadLine(); 
+
             Console.Write("Código do bloco de origem: ");
             string blocoCodigo = Console.ReadLine();
 
@@ -239,6 +263,13 @@ namespace SistemaMarmoreGranito
                 return;
             }
 
+            Console.Write("Espessura (em centímetros): "); 
+            if (!double.TryParse(Console.ReadLine(), out double espessura))
+            {
+                Console.WriteLine("Valor inválido para espessura.");
+                return;
+            }
+
             Console.Write("Valor: ");
             if (!decimal.TryParse(Console.ReadLine(), out decimal valor))
             {
@@ -249,14 +280,26 @@ namespace SistemaMarmoreGranito
             using var conexao = Database.GetConnection();
             conexao.Open();
 
+            // Verificar se o CodigoChapa já existe
+            var comandoVerificaChapaExistente = conexao.CreateCommand();
+            comandoVerificaChapaExistente.CommandText = "SELECT COUNT(*) FROM Chapas WHERE CodigoChapa = $codigoChapa";
+            comandoVerificaChapaExistente.Parameters.AddWithValue("$codigoChapa", codigoChapa);
 
+            long chapaExiste = (long)comandoVerificaChapaExistente.ExecuteScalar();
+            if (chapaExiste > 0)
+            {
+                Console.WriteLine("Erro: Já existe uma chapa com este código.");
+                return;
+            }
+
+            // Verificar se o Bloco de origem existe
             var comandoVerificaBloco = conexao.CreateCommand();
-            comandoVerificaBloco.CommandText = "SELECT COUNT(*) FROM Blocos WHERE Codigo = $codigo";
-            comandoVerificaBloco.Parameters.AddWithValue("$codigo", blocoCodigo);
+            comandoVerificaBloco.CommandText = "SELECT COUNT(*) FROM Blocos WHERE CodigoBloco = $codigoBloco"; 
+            comandoVerificaBloco.Parameters.AddWithValue("$codigoBloco", blocoCodigo);
 
-            long existe = (long)comandoVerificaBloco.ExecuteScalar();
+            long existeBloco = (long)comandoVerificaBloco.ExecuteScalar();
 
-            if (existe == 0)
+            if (existeBloco == 0)
             {
                 Console.WriteLine("Bloco não encontrado. Cadastre o bloco antes de cadastrar a chapa.");
                 return;
@@ -264,14 +307,16 @@ namespace SistemaMarmoreGranito
 
             var comandoInsercao = conexao.CreateCommand();
             comandoInsercao.CommandText = @"
-                INSERT INTO Chapas (BlocoCodigo, TipoMaterial, Comprimento, Largura, Valor)
-                VALUES ($blocoCodigo, $tipoMaterial, $comprimento, $largura, $valor);
+                INSERT INTO Chapas (CodigoChapa, BlocoCodigo, TipoMaterial, Comprimento, Largura, Espessura, Valor)
+                VALUES ($codigoChapa, $blocoCodigo, $tipoMaterial, $comprimento, $largura, $espessura, $valor);
             ";
 
+            comandoInsercao.Parameters.AddWithValue("$codigoChapa", codigoChapa);
             comandoInsercao.Parameters.AddWithValue("$blocoCodigo", blocoCodigo);
             comandoInsercao.Parameters.AddWithValue("$tipoMaterial", tipoMaterial);
             comandoInsercao.Parameters.AddWithValue("$comprimento", comprimento);
             comandoInsercao.Parameters.AddWithValue("$largura", largura);
+            comandoInsercao.Parameters.AddWithValue("$espessura", espessura);
             comandoInsercao.Parameters.AddWithValue("$valor", valor);
 
             int resultado = comandoInsercao.ExecuteNonQuery();
@@ -291,8 +336,8 @@ namespace SistemaMarmoreGranito
             conexao.Open();
 
             var comandoBuscaBloco = conexao.CreateCommand();
-            comandoBuscaBloco.CommandText = "SELECT Metragem, TipoMaterial FROM Blocos WHERE Codigo = $codigo";
-            comandoBuscaBloco.Parameters.AddWithValue("$codigo", codigoBloco);
+            comandoBuscaBloco.CommandText = "SELECT Metragem, TipoMaterial FROM Blocos WHERE CodigoBloco = $codigoBloco"; 
+            comandoBuscaBloco.Parameters.AddWithValue("$codigoBloco", codigoBloco);
 
             using var reader = comandoBuscaBloco.ExecuteReader();
 
@@ -302,8 +347,8 @@ namespace SistemaMarmoreGranito
                 return;
             }
 
-            double metragem = Convert.ToDouble(reader["Metragem"]);     
-            string tipoMaterial = reader["TipoMaterial"].ToString();
+            double metragemTotalBloco = Convert.ToDouble(reader["Metragem"]);
+            string tipoMaterialBloco = reader["TipoMaterial"].ToString();
 
             reader.Close();
 
@@ -314,14 +359,33 @@ namespace SistemaMarmoreGranito
                 return;
             }
 
+            double metragemRestanteBloco = metragemTotalBloco;
+
             for (int i = 0; i < quantidadeChapas; i++)
             {
                 Console.WriteLine($"\nCadastro da chapa {i + 1}:");
+
+                Console.Write("Código da chapa: ");
+                string codigoChapa = Console.ReadLine();
 
                 Console.Write("Comprimento (m): ");
                 if (!double.TryParse(Console.ReadLine(), out double comprimentoChapa))
                 {
                     Console.WriteLine("Valor inválido para comprimento.");
+                    return;
+                }
+
+                Console.Write("Largura (m): "); 
+                if (!double.TryParse(Console.ReadLine(), out double larguraChapa))
+                {
+                    Console.WriteLine("Valor inválido para largura.");
+                    return;
+                }
+
+                Console.Write("Espessura (cm): "); 
+                if (!double.TryParse(Console.ReadLine(), out double espessuraChapa))
+                {
+                    Console.WriteLine("Valor inválido para espessura.");
                     return;
                 }
 
@@ -332,25 +396,64 @@ namespace SistemaMarmoreGranito
                     return;
                 }
 
+ 
+                double volumeChapa = comprimentoChapa * larguraChapa * espessuraChapa;
+                if (volumeChapa > metragemRestanteBloco)
+                {
+                    Console.WriteLine($"Erro: Volume da chapa ({volumeChapa}m³) excede a metragem restante do bloco ({metragemRestanteBloco}m³).");
+                    Console.WriteLine("Esta chapa não será cadastrada. Pressione Enter para continuar com as próximas chapas (se houver) ou Ctrl+C para sair.");
+                    Console.ReadLine();
+                    continue; 
+                }
+
+              
+                var comandoVerificaChapaExistente = conexao.CreateCommand();
+                comandoVerificaChapaExistente.CommandText = "SELECT COUNT(*) FROM Chapas WHERE CodigoChapa = $codigoChapa";
+                comandoVerificaChapaExistente.Parameters.AddWithValue("$codigoChapa", codigoChapa);
+
+                long chapaExiste = (long)comandoVerificaChapaExistente.ExecuteScalar();
+                if (chapaExiste > 0)
+                {
+                    Console.WriteLine("Erro: Já existe uma chapa com este código. Por favor, insira um código único.");
+                    i--; 
+                    continue;
+                }
 
                 var comandoInsereChapa = conexao.CreateCommand();
                 comandoInsereChapa.CommandText = @"
-            INSERT INTO Chapas (BlocoCodigo, TipoMaterial, Comprimento, Largura, Valor)
-            VALUES ($blocoCodigo, $tipoMaterial, $comprimento, $largura, $valor);
-        ";
+                    INSERT INTO Chapas (CodigoChapa, BlocoCodigo, TipoMaterial, Comprimento, Largura, Espessura, Valor)
+                    VALUES ($codigoChapa, $blocoCodigo, $tipoMaterial, $comprimento, $largura, $espessura, $valor);
+                ";
+                comandoInsereChapa.Parameters.AddWithValue("$codigoChapa", codigoChapa);
                 comandoInsereChapa.Parameters.AddWithValue("$blocoCodigo", codigoBloco);
-                comandoInsereChapa.Parameters.AddWithValue("$tipoMaterial", tipoMaterial);;
+                comandoInsereChapa.Parameters.AddWithValue("$tipoMaterial", tipoMaterialBloco); 
+                comandoInsereChapa.Parameters.AddWithValue("$comprimento", comprimentoChapa);
+                comandoInsereChapa.Parameters.AddWithValue("$largura", larguraChapa);
+                comandoInsereChapa.Parameters.AddWithValue("$espessura", espessuraChapa);
                 comandoInsereChapa.Parameters.AddWithValue("$valor", valorChapa);
 
-                comandoInsereChapa.ExecuteNonQuery();
+                try
+                {
+                    comandoInsereChapa.ExecuteNonQuery();
+                    Console.WriteLine($"Chapa '{codigoChapa}' cadastrada com sucesso!");
+                    metragemRestanteBloco -= volumeChapa; 
+                }
+                catch (SqliteException ex)
+                {
+                    Console.WriteLine($"Erro ao cadastrar chapa '{codigoChapa}': {ex.Message}");
+                    Console.WriteLine("Verifique se o código da chapa já existe ou se há outro problema de banco de dados.");
+                    i--; 
+                }
             }
 
-            var comandoAtualizaBloco = conexao.CreateCommand();
-            comandoAtualizaBloco.CommandText = "UPDATE Blocos SET Serrado = 1 WHERE Codigo = $codigo";
-            comandoAtualizaBloco.Parameters.AddWithValue("$codigo", codigoBloco);
-            comandoAtualizaBloco.ExecuteNonQuery();
+            var comandoAtualizaMetragemBloco = conexao.CreateCommand();
+            comandoAtualizaMetragemBloco.CommandText = "UPDATE Blocos SET Metragem = $metragemRestante WHERE CodigoBloco = $codigoBloco";
+            comandoAtualizaMetragemBloco.Parameters.AddWithValue("$metragemRestante", metragemRestanteBloco);
+            comandoAtualizaMetragemBloco.Parameters.AddWithValue("$codigoBloco", codigoBloco);
+            comandoAtualizaMetragemBloco.ExecuteNonQuery();
 
             Console.WriteLine("Serragem realizada com sucesso!");
+            Console.WriteLine($"Metragem restante do bloco '{codigoBloco}': {metragemRestanteBloco:F2}m³");
         }
 
 
@@ -362,13 +465,19 @@ namespace SistemaMarmoreGranito
             conexao.Open();
 
             var comando = conexao.CreateCommand();
-            comando.CommandText = "SELECT Codigo, PedreiraOrigem, Metragem, TipoMaterial, ValorCompra, NotaFiscalEntrada FROM Blocos";
+            comando.CommandText = "SELECT CodigoBloco, PedreiraOrigem, Metragem, TipoMaterial, ValorCompra, NotaFiscalEntrada FROM Blocos"; 
 
             using var reader = comando.ExecuteReader();
 
+            if (!reader.HasRows)
+            {
+                Console.WriteLine("Nenhum bloco cadastrado.");
+                return;
+            }
+
             while (reader.Read())
             {
-                Console.WriteLine($"Código: {reader["Codigo"]}, Origem: {reader["PedreiraOrigem"]}, Metragem: {reader["Metragem"]}m³, Material: {reader["TipoMaterial"]}, Valor: R${reader["ValorCompra"]}, Nota Fiscal: {reader["NotaFiscalEntrada"]}");
+                Console.WriteLine($"Código: {reader["CodigoBloco"]}, Origem: {reader["PedreiraOrigem"]}, Metragem: {reader["Metragem"]}m³, Material: {reader["TipoMaterial"]}, Valor: R${reader["ValorCompra"]}, Nota Fiscal: {reader["NotaFiscalEntrada"]}");
             }
         }
 
@@ -380,13 +489,19 @@ namespace SistemaMarmoreGranito
             conexao.Open();
 
             var comando = conexao.CreateCommand();
-            comando.CommandText = "SELECT Id, BlocoCodigo, TipoMaterial, Comprimento, Largura, Valor FROM Chapas";
+            comando.CommandText = "SELECT CodigoChapa, BlocoCodigo, TipoMaterial, Comprimento, Largura, Espessura, Valor FROM Chapas"; 
 
             using var reader = comando.ExecuteReader();
 
+            if (!reader.HasRows)
+            {
+                Console.WriteLine("Nenhuma chapa cadastrada.");
+                return;
+            }
+
             while (reader.Read())
             {
-                Console.WriteLine($"ID: {reader["Id"]}, Bloco: {reader["BlocoCodigo"]}, Material: {reader["TipoMaterial"]}, Comprimento: {reader["Comprimento"]}m, Largura: {reader["Largura"]}m, Valor: R${reader["Valor"]}");
+                Console.WriteLine($"Código Chapa: {reader["CodigoChapa"]}, Bloco Origem: {reader["BlocoCodigo"]}, Material: {reader["TipoMaterial"]}, Comp: {reader["Comprimento"]}m, Larg: {reader["Largura"]}m, Espessura: {reader["Espessura"]}m, Valor: R${reader["Valor"]}");
             }
         }
 

@@ -20,22 +20,15 @@ O sistema simula operações essenciais de uma empresa do setor, permitindo o co
 # Clone este repositório
 git clone https://github.com/carlavloureiro/sistema-marmore-granito.git
 
- **Acesse a pasta do projeto:**
- Navegue até o diretório principal do projeto clonado, onde se encontra o arquivo `MarmoreGranitoSistema.csproj`.
-```bash
+ # Acesse a pasta do projeto:
 cd sistema-marmore-granito
 
-*Obs: Certifique-se de estar na pasta que contém o arquivo `.csproj`.*
-**Restaure as dependências e compile o projeto:**
- Execute o comando `dotnet build` para restaurar os pacotes NuGet necessários e compilar o projeto.
-```bash
+# Restaure as dependências e compile o projeto:
  dotnet build
 
-**Execute a aplicação:**
- Após a compilação bem-sucedida, execute a aplicação console com o comando `dotnet run`.
- ```bash
+# Execute a aplicação:
 dotnet run
-    ```
+    
 O sistema iniciará no terminal, apresentando o menu de login e as opções de interação.
  ```
 

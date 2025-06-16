@@ -13,7 +13,7 @@ O sistema simula operações essenciais de uma empresa do setor, permitindo o co
 * **Linguagem de Programação:** C#
 * **Framework:** .NET 8.0
 * **Banco de Dados:** SQLite (relacional)
-* 
+
 ## 🚀 Como executar o projeto
 
 ```bash

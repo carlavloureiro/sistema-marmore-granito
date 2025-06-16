@@ -6,7 +6,7 @@
             );
 
             CREATE TABLE IF NOT EXISTS Blocos (
-                CodigoBloco TEXT PRIMARY KEY NOT NULL, -- Alterado de Codigo para CodigoBloco
+                CodigoBloco TEXT PRIMARY KEY NOT NULL, 
                 PedreiraOrigem TEXT NOT NULL,
                 Metragem REAL NOT NULL,
                 TipoMaterial TEXT NOT NULL,
@@ -15,12 +15,12 @@
             );
 
             CREATE TABLE IF NOT EXISTS Chapas (
-                CodigoChapa TEXT PRIMARY KEY NOT NULL, -- Alterado de Id INTEGER PRIMARY KEY AUTOINCREMENT
+                CodigoChapa TEXT PRIMARY KEY NOT NULL, 
                 BlocoCodigo TEXT NOT NULL,
                 TipoMaterial TEXT NOT NULL,
                 Comprimento REAL NOT NULL,
                 Largura REAL NOT NULL,
-                Espessura REAL NOT NULL, -- Nova coluna
+                Espessura REAL NOT NULL, 
                 Valor REAL NOT NULL,
-                FOREIGN KEY (BlocoCodigo) REFERENCES Blocos(CodigoBloco) -- Referência atualizada
+                FOREIGN KEY (BlocoCodigo) REFERENCES Blocos(CodigoBloco) 
             );
